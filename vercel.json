@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/hf/(.*)",
+      "destination": "https://router.huggingface.co/$1"
+    },
+    {
+      "source": "/api/img/(.*)",
+      "destination": "https://api-inference.huggingface.co/$1"
+    }
+  ]
+}

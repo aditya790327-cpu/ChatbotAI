@@ -28,9 +28,14 @@ const App = () => {
    * Text generation using Qwen model via Router Proxy
    */
   const queryText = async (userInput) => {
-    if (!HF_TOKEN) return "Error: Token missing in .env";
+    if (!HF_TOKEN) {
+      console.error("Missing VITE_HF_TOKEN in .env");
+      return "Error: Token missing in .env";
+    }
     const updatedHistory = [...chatHistory, { role: 'user', content: userInput }];
+    console.log("Sending request to HF API...");
     try {
+      // Using relative path that works both locally (via vite proxy) and in production (via vercel.json)
       const res = await fetch("/api/hf/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -38,17 +43,24 @@ const App = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "Qwen/Qwen3-4B-Instruct-2507:nscale",
+          model: "Qwen/Qwen2.5-7B-Instruct", // Reverting to a high-quality Qwen model
           messages: updatedHistory,
         }),
       });
 
-      if (!res.ok) return `API Error (${res.status})`;
+      console.log("Response status:", res.status);
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        console.error("API Error Response:", errorData);
+        return `API Error (${res.status}): ${errorData.error || "Not Found"}`;
+      }
+      
       const data = await res.json();
       const reply = data.choices?.[0]?.message?.content || "No response.";
       setChatHistory([...updatedHistory, { role: 'assistant', content: reply }]);
       return reply;
     } catch (e) {
+      console.error("Fetch Error:", e);
       return `Connection Error: ${e.message}`;
     }
   };
@@ -57,16 +69,18 @@ const App = () => {
    * Image generation using Inference Client (as requested)
    */
   const generateImage = async (prompt) => {
-    if (!HF_TOKEN) return { error: "No Token" };
+    if (!HF_TOKEN) return { error: "No Token in .env" };
+    console.log("Generating image for:", prompt);
     try {
-      // Using the exact snippet provided
       const blob = await client.textToImage({
-        provider: "nscale",
         model: "stabilityai/stable-diffusion-xl-base-1.0",
         inputs: prompt,
-        parameters: { num_inference_steps: 5 },
+        parameters: { 
+          num_inference_steps: 25, // Standard quality
+        },
       });
       
+      console.log("Image generation successful");
       return { url: URL.createObjectURL(blob) };
     } catch (e) {
       console.error("SDK Image error:", e);
