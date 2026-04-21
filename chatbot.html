@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AetherChat AI - Premium Chat Experience</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap');
+
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --glass: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --user-bubble: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            --bot-bubble: #334155;
+            --accent: #10b981;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at top right, #1e1b4b, #0f172a);
+            color: var(--text-main);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #root {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .app-container {
+            max-width: 1000px;
+            width: 100%;
+            margin: 0 auto;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 2rem;
+            gap: 1.5rem;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        header h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #818cf8, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .chat-history {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            scrollbar-width: thin;
+            scrollbar-color: var(--glass-border) transparent;
+        }
+
+        .chat-history::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-history::-webkit-scrollbar-thumb {
+            background: var(--glass-border);
+            border-radius: 10px;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 1rem 1.25rem;
+            border-radius: 1.5rem;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            position: relative;
+            animation: slideIn 0.3s ease-out forwards;
+        }
+
+        .user-message {
+            align-self: flex-end;
+            background: var(--user-bubble);
+            color: white;
+            border-bottom-right-radius: 0.25rem;
+            box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.3);
+        }
+
+        .bot-message {
+            align-self: flex-start;
+            background: var(--bot-bubble);
+            color: var(--text-main);
+            border-bottom-left-radius: 0.25rem;
+            border: 1px solid var(--glass-border);
+        }
+
+        .message-image {
+            max-width: 100%;
+            border-radius: 1rem;
+            margin-top: 0.5rem;
+            display: block;
+            border: 1px solid var(--glass-border);
+        }
+
+        .typing-indicator {
+            align-self: flex-start;
+            background: var(--bot-bubble);
+            padding: 0.75rem 1rem;
+            border-radius: 1rem;
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+
+        .typing-indicator span {
+            width: 6px;
+            height: 6px;
+            background: var(--text-muted);
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+
+        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1.0); }
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .input-area {
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            padding: 1rem;
+            border-radius: 1.5rem;
+            border: 1px solid var(--glass-border);
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+
+        input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 1rem;
+            outline: none;
+            padding: 0.5rem;
+        }
+
+        input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.25rem;
+            border-radius: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        button:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            color: var(--text-main);
+        }
+
+        .btn-secondary:hover {
+            background: var(--glass-border);
+        }
+
+        @media (max-width: 640px) {
+            .app-container {
+                padding: 1rem;
+            }
+            .input-area {
+                flex-direction: column;
+                padding: 0.75rem;
+            }
+            .action-buttons {
+                width: 100%;
+            }
+            button {
+                flex: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useRef, useEffect } = React;
+
+        // Configuration - Variable for API Token
+        const HF_TOKEN = "YOUR_HF_TOKEN_HERE"; 
+
+        const App = () => {
+            const [messages, setMessages] = useState([
+                { role: 'assistant', content: 'Hello! I am your AI assistant. How can I help you today?', type: 'text' }
+            ]);
+            const [input, setInput] = useState('');
+            const [isTyping, setIsTyping] = useState(false);
+            const chatEndRef = useRef(null);
+
+            const scrollToBottom = () => {
+                chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+            };
+
+            useEffect(() => {
+                scrollToBottom();
+            }, [messages, isTyping]);
+
+            const appendMessage = (role, content, type = 'text') => {
+                setMessages(prev => [...prev, { role, content, type }]);
+            };
+
+            const queryText = async (userInput) => {
+                if (!HF_TOKEN || HF_TOKEN === "YOUR_HF_TOKEN") {
+                    return "Error: Hugging Face Token is missing. Please add your token in the code (HF_TOKEN variable).";
+                }
+
+                try {
+                    // Using standard Inference API endpoint for better compatibility
+                    const response = await fetch(
+                        "https://api-inference.huggingface.co/v1/chat/completions",
+                        {
+                            headers: {
+                                "Authorization": `Bearer ${HF_TOKEN}`,
+                                "Content-Type": "application/json",
+                            },
+                            method: "POST",
+                            body: JSON.stringify({
+                                model: "google/gemma-2-9b-it",
+                                messages: [{ role: "user", content: userInput }]
+                            }),
+                        }
+                    );
+
+                    const result = await response.json();
+                    
+                    if (result.choices && result.choices[0]) {
+                        return result.choices[0].message.content;
+                    }
+                    return (result.error?.message || "Sorry, I encountered an error while thinking.");
+                } catch (error) {
+                    return "Network error. Please check your connection.";
+                }
+            };
+
+            const generateImage = async (prompt) => {
+                if (!HF_TOKEN || HF_TOKEN === "YOUR_HF_TOKEN") {
+                    alert("Please add your Hugging Face token to enable image generation.");
+                    return null;
+                }
+
+                try {
+                    const response = await fetch(
+                        "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0",
+                        {
+                            headers: {
+                                "Authorization": `Bearer ${HF_TOKEN}`,
+                                "Content-Type": "application/json",
+                            },
+                            method: "POST",
+                            body: JSON.stringify({ inputs: prompt }),
+                        }
+                    );
+
+                    if (!response.ok) throw new Error("Image generation failed");
+
+                    const blob = await response.blob();
+                    return URL.createObjectURL(blob);
+                } catch (error) {
+                    console.error("Image Generation Error:", error);
+                    return null;
+                }
+            };
+
+            const sendMessage = async () => {
+                if (!input.trim() || isTyping) return;
+
+                const userQuery = input.trim();
+                setInput('');
+                appendMessage('user', userQuery);
+                setIsTyping(true);
+
+                const botAnswer = await queryText(userQuery);
+                setIsTyping(false);
+                appendMessage('assistant', botAnswer);
+            };
+
+            const handleGenerateImage = async () => {
+                if (!input.trim() || isTyping) return;
+
+                const prompt = input.trim();
+                setInput('');
+                appendMessage('user', `Generate image for: ${prompt}`);
+                setIsTyping(true);
+
+                const imageUrl = await generateImage(prompt);
+                setIsTyping(false);
+
+                if (imageUrl) {
+                    appendMessage('assistant', imageUrl, 'image');
+                } else {
+                    appendMessage('assistant', "Failed to generate image.");
+                }
+            };
+
+            return (
+                <div className="app-container">
+                    <header>
+                        <h1>AetherChat AI</h1>
+                        <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                            Standard Inference API + Gemma 2
+                        </div>
+                    </header>
+
+                    <div className="chat-history">
+                        {messages.map((msg, index) => (
+                            <div key={index} className={`message ${msg.role === 'user' ? 'user-message' : 'bot-message'}`}>
+                                {msg.type === 'text' ? (
+                                    <div style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</div>
+                                ) : (
+                                    <div>
+                                        <p style={{ marginBottom: '8px', fontSize: '0.85rem', opacity: 0.8 }}>Generated visual:</p>
+                                        <img src={msg.content} alt="AI Generated" className="message-image" />
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                        {isTyping && (
+                            <div className="typing-indicator">
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                                <span style={{ marginLeft: '8px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>Typing...</span>
+                            </div>
+                        )}
+                        <div ref={chatEndRef} />
+                    </div>
+
+                    <div className="input-area">
+                        <input
+                            type="text"
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                            placeholder="Type a message or image prompt..."
+                            disabled={isTyping}
+                        />
+                        <div className="action-buttons">
+                            <button 
+                                className="btn-secondary" 
+                                onClick={handleGenerateImage} 
+                                disabled={isTyping || !input.trim()}
+                                title="Generate Image"
+                            >
+                                🎨 <span className="btn-text">Generate Image</span>
+                            </button>
+                            <button onClick={sendMessage} disabled={isTyping || !input.trim()}>
+                                Send 🚀
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
