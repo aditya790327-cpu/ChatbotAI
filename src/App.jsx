@@ -32,11 +32,11 @@ const App = () => {
     const updatedHistory = [...chatHistory, { role: 'user', content: userInput }];
     
     try {
-      console.log("Requesting chat completion via SDK...");
+      console.log("Requesting chat completion via SDK using Gemma 4...");
       const response = await client.chatCompletion({
-        model: "Qwen/Qwen2.5-7B-Instruct",
+        model: "google/gemma-4-31B-it",
         messages: updatedHistory,
-        max_tokens: 500,
+        max_tokens: 1000,
       });
 
       const reply = response.choices?.[0]?.message?.content || "No response.";
