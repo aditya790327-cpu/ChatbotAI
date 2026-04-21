@@ -28,40 +28,23 @@ const App = () => {
    * Text generation using Qwen model via Router Proxy
    */
   const queryText = async (userInput) => {
-    if (!HF_TOKEN) {
-      console.error("Missing VITE_HF_TOKEN in .env");
-      return "Error: Token missing in .env";
-    }
+    if (!HF_TOKEN) return "Error: Token missing in .env";
     const updatedHistory = [...chatHistory, { role: 'user', content: userInput }];
-    console.log("Sending request to HF API...");
+    
     try {
-      // Using relative path that works both locally (via vite proxy) and in production (via vercel.json)
-      const res = await fetch("/api/hf/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${HF_TOKEN}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "Qwen/Qwen2.5-7B-Instruct", // Reverting to a high-quality Qwen model
-          messages: updatedHistory,
-        }),
+      console.log("Requesting chat completion via SDK...");
+      const response = await client.chatCompletion({
+        model: "Qwen/Qwen2.5-7B-Instruct",
+        messages: updatedHistory,
+        max_tokens: 500,
       });
 
-      console.log("Response status:", res.status);
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        console.error("API Error Response:", errorData);
-        return `API Error (${res.status}): ${errorData.error || "Not Found"}`;
-      }
-      
-      const data = await res.json();
-      const reply = data.choices?.[0]?.message?.content || "No response.";
+      const reply = response.choices?.[0]?.message?.content || "No response.";
       setChatHistory([...updatedHistory, { role: 'assistant', content: reply }]);
       return reply;
     } catch (e) {
-      console.error("Fetch Error:", e);
-      return `Connection Error: ${e.message}`;
+      console.error("SDK Chat Error:", e);
+      return `API Error: ${e.message}`;
     }
   };
 
